@@ -1,62 +1,48 @@
 # Overview
-Round-1A extracts document outlines (headings) from PDFs, generating JSON files per document that describe the hierarchical structure of the PDF content, helping downstream tasks understanding document sections.
+Round-1B consumes JSON outlines from Round-1A and ranks/Presents document sections relevant to a persona’s task, using a hybrid semantic and lexical ranking and extractive summarization.
 
 ## Project Structure
 ```bash
-Round_1A/
-├── input/                 # Place your input PDF files here
-├── output/                # JSON outline files are saved here
-├── pdf_utils/             # Shared PDF processing utilities
+Round_1B/
+├── input/                 # Contains challenge1b_input.json and outlines/
+│   ├── challenge1b_input.json
+│   └── outlines/          # JSON outlines from Round_1A here
+├── output/                # Results JSON saved here
+├── pdf_utils/             # Shared utilities (embedding, text extraction)
+├── persona_miner/
 │   ├── __init__.py
-│   ├── reader.py
-│   ├── heading_detect.py
-│   ├── text_extract.py
-│   └── embedding_utils.py
-├── process_pdfs.py        # Main script to extract outlines
-├── requirements.txt       # Python dependencies
-├── Dockerfile             # Docker image build configuration
-├── output_schema.json     # JSON schema for validation (optional)
+│   ├── section_indexer.py
+│   ├── hybrid_ranker.py
+│   ├── text_refiner.py
+│   └── output_generator.py
+├── analyze_collection.py  # Main entrypoint script
+├── requirements.txt
+├── Dockerfile
 ```
-# Setup
- Make sure your input PDFs are placed inside Round_1A/input/ directory.
-
- Manual Docker Build and Run Instructions
-## Build Docker Image
-
-### Open a terminal in the Round_1A directory, then run:
-
+## Manual Docker Build and Run Instructions
+### Build Docker Image
 ```bash
 export DOCKER_BUILDKIT=1
-docker build -t round1a-outline-extractor .
+docker build -t round1b-persona-miner .
 ```
 ## Run Docker Container
+``` bash
+docker run --rm \
+  -v "$(pwd)/input":/app/input:ro \
+  -v "$(pwd)/output":/app/output \
+  round1b-persona-miner
+```
+Automatically uses /app/input/challenge1b_input.json as input
 
-### To process all PDFs from input/ and save JSON outlines in output/, run:
+Outputs to /app/output/challenge1b_output.json
 
+## Custom Input/Output Paths (Optional)
 ```bash
 docker run --rm \
   -v "$(pwd)/input":/app/input:ro \
   -v "$(pwd)/output":/app/output \
-  round1a-outline-extractor \
-  /app/input /app/output
+  round1b-persona-miner \
+  /app/input/challenge1b_input.json /app/output/challenge1b_output.json
 ```
-## Replace /app/input and /app/output if you mount custom paths.
-
-### Process a Single PDF
-
-### If you want to process a single PDF file:
-
-```bash
-docker run --rm \
-  -v "$(pwd)/input":/app/input:ro \
-  -v "$(pwd)/output":/app/output \
-  round1a-outline-extractor \
-  /app/input/yourfile.pdf /app/output/yourfile.json
-```
-## Outputs
-The container writes JSON files to the mounted output folder named after each PDF, e.g.: sample_document.pdf → sample_document.json.
-
-The JSON structure contains:
-
-title: extracted document title
- outline: list of headings with their levels and page numbers
+# Output
+Ranked and refined sections output in JSON file challenge1b_output.json in the output/ directory.
